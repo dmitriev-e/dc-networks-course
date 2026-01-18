@@ -56,6 +56,7 @@
 - **Routing Protocol:** eBGP (External BGP) для Underlay
 - **ASN Range:** 65000-65004 (Private AS range: 64512-65534)
 - **BFD:** Enabled для всех BGP соседей (быстрое обнаружение отказов)
+- **BGP Timers:** keepalive 3s, hold time 9s (агрессивные таймеры для быстрой сходимости в DC)
 - **ECMP:** 
   - Spine: `maximum-paths 4 ecmp 4` (до 4 равноценных путей к каждому Leaf)
   - Leaf: `maximum-paths 2 ecmp 2` (2 пути через оба Spine)
@@ -67,17 +68,21 @@
 ```
 neighbor LEAF peer group
 neighbor LEAF bfd
+neighbor LEAF timers 3 9
 ```
 - Используется peer group **LEAF** для упрощения конфигурации
 - BFD включен для быстрого обнаружения отказов линков
+- Агрессивные BGP таймеры: keepalive 3s, hold 9s (по умолчанию 60/180)
 
 #### На Leaf коммутаторах
 ```
 neighbor SPINE peer group
 neighbor SPINE bfd
+neighbor SPINE timers 3 9
 ```
 - Используется peer group **SPINE** для упрощения конфигурации
 - BFD включен для всех соединений со Spine
+- Агрессивные BGP таймеры для быстрой реакции на изменения
 
 ### BGP Peering Matrix
 
