@@ -16,18 +16,19 @@
 | VLAN | VNI   | Route Target | Описание | Подключенные хосты |
 |------|-------|--------------|----------|--------------------|
 | 10   | 10010 | 10:10010     | VLAN10   | VPC15 (Leaf-01), VPC16 (Leaf-02) |
-| 20   | 10020 | 20:10020     | VLAN20   | VPC17, VPC18 (Leaf-03), VPC19, VPC20 (Leaf-04) |
+| 20   | 10020 | 20:10020     | VLAN20   | VPC17 (Leaf-03), VPC19 (Leaf-04) |
+| 30   | 10030 | 30:10030     | VLAN30   | VPC18 (Leaf-03), VPC20 (Leaf-04) |
 
 **VNI Numbering:** VNI = 10000 + VLAN_ID (например, VLAN 10 → VNI 10010)
 
 ### VTEP Endpoints
 
-| Device  | Loopback0 (VTEP IP) | VLANs    | VNIs         |
-|---------|---------------------|----------|--------------|
-| Leaf-01 | 10.1.1.1            | 10, 20   | 10010, 10020 |
-| Leaf-02 | 10.1.1.2            | 10, 20   | 10010, 10020 |
-| Leaf-03 | 10.1.1.3            | 10, 20   | 10010, 10020 |
-| Leaf-04 | 10.1.1.4            | 10, 20   | 10010, 10020 |
+| Device  | Loopback0 (VTEP IP) | VLANs       | VNIs              |
+|---------|---------------------|-------------|-------------------|
+| Leaf-01 | 10.1.1.1            | 10, 20, 30  | 10010, 10020, 10030 |
+| Leaf-02 | 10.1.1.2            | 10, 20, 30  | 10010, 10020, 10030 |
+| Leaf-03 | 10.1.1.3            | 10, 20, 30  | 10010, 10020, 10030 |
+| Leaf-04 | 10.1.1.4            | 10, 20, 30  | 10010, 10020, 10030 |
 
 ## Детали конфигурации
 
@@ -57,6 +58,7 @@ interface Vxlan1
    vxlan udp-port 4789
    vxlan vlan 10 vni 10010
    vxlan vlan 20 vni 10020
+   vxlan vlan 30 vni 10030
    vxlan learn-restrict any
 ```
 
@@ -76,6 +78,11 @@ router bgp 65001
       route-target both 10:10010
       redistribute learned
    !
+   vlan 30
+      rd 10.1.1.1:10030
+      route-target both 30:10030
+      redistribute learned
+   !
    address-family evpn
       neighbor SPINE activate
 ```
@@ -91,12 +98,12 @@ router bgp 65001
 
 **Формат:** `<VTEP_IP>:<VNI>`
 
-| Leaf    | VLAN 10 RD      | VLAN 20 RD      |
-|---------|-----------------|-----------------|
-| Leaf-01 | 10.1.1.1:10010  | 10.1.1.1:10020  |
-| Leaf-02 | 10.1.1.2:10010  | 10.1.1.2:10020  |
-| Leaf-03 | 10.1.1.3:10010  | 10.1.1.3:10020  |
-| Leaf-04 | 10.1.1.4:10010  | 10.1.1.4:10020  |
+| Leaf    | VLAN 10 RD      | VLAN 20 RD      | VLAN 30 RD      |
+|---------|-----------------|-----------------|-----------------|
+| Leaf-01 | 10.1.1.1:10010  | 10.1.1.1:10020  | 10.1.1.1:10030  |
+| Leaf-02 | 10.1.1.2:10010  | 10.1.1.2:10020  | 10.1.1.2:10030  |
+| Leaf-03 | 10.1.1.3:10010  | 10.1.1.3:10020  | 10.1.1.3:10030  |
+| Leaf-04 | 10.1.1.4:10010  | 10.1.1.4:10020  | 10.1.1.4:10030  |
 
 **Зачем нужен RD:**
 - Делает EVPN маршруты уникальными в BGP таблице
@@ -111,6 +118,7 @@ router bgp 65001
 |------|--------------|------------|
 | 10   | 10:10010     | Import/Export на всех Leaf для VLAN 10 |
 | 20   | 20:10020     | Import/Export на всех Leaf для VLAN 20 |
+| 30   | 30:10030     | Import/Export на всех Leaf для VLAN 30 |
 
 **Зачем нужен RT:**
 - Определяет, какие маршруты import/export
@@ -167,15 +175,14 @@ BGP summary information for VRF default
 Router identifier 10.1.2.1, local AS number 65000
 Neighbor Status Codes: m - Under maintenance
   Description              Neighbor   V AS           MsgRcvd   MsgSent  InQ OutQ  Up/Down State   PfxRcd PfxAcc
-  Leaf-01                  10.101.1.0 4 65001            214       211    0    0 00:05:36 Estab   2      2
-  Leaf-02                  10.101.1.2 4 65002            212       213    0    0 00:05:08 Estab   2      2
-  Leaf-03                  10.101.1.4 4 65003            216       208    0    0 00:04:52 Estab   2      2
-  Leaf-04                  10.101.1.6 4 65004            208       211    0    0 00:04:32 Estab   2      2
+  Leaf-01                  10.101.1.0 4 65001           1292      1283    0    0 00:51:00 Estab   4      4
+  Leaf-02                  10.101.1.2 4 65002           1280      1296    0    0 00:50:32 Estab   4      4
+  Leaf-03                  10.101.1.4 4 65003           1279      1282    0    0 00:50:16 Estab   4      4
+  Leaf-04                  10.101.1.6 4 65004           1273      1291    0    0 00:49:56 Estab   4      4
 ```
 
 **Объяснение:**
 - Все 4 Leaf установили EVPN сессии
-- PfxRcd: каждый Leaf анонсирует 2 Type 3 маршрута (по одному на VNI 10010 и 10020)
 
 #### Проверка EVPN маршрутов
 ```bash
@@ -188,21 +195,37 @@ Origin codes: i - IGP, e - EGP, ? - incomplete
 AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Link Local Nexthop
 
           Network                Next Hop              Metric  LocPref Weight  Path
+ * >      RD: 10.1.1.1:10010 mac-ip 0050.7966.680f
+                                 10.1.1.1              -       100     0       65001 i
+ * >      RD: 10.1.1.2:10010 mac-ip 0050.7966.6810
+                                 10.1.1.2              -       100     0       65002 i
+ * >      RD: 10.1.1.3:10020 mac-ip 0050.7966.6811
+                                 10.1.1.3              -       100     0       65003 i
+ * >      RD: 10.1.1.4:10020 mac-ip 0050.7966.6813
+                                 10.1.1.4              -       100     0       65004 i
  * >      RD: 10.1.1.1:10010 imet 10.1.1.1
                                  10.1.1.1              -       100     0       65001 i
  * >      RD: 10.1.1.1:10020 imet 10.1.1.1
+                                 10.1.1.1              -       100     0       65001 i
+ * >      RD: 10.1.1.1:10030 imet 10.1.1.1
                                  10.1.1.1              -       100     0       65001 i
  * >      RD: 10.1.1.2:10010 imet 10.1.1.2
                                  10.1.1.2              -       100     0       65002 i
  * >      RD: 10.1.1.2:10020 imet 10.1.1.2
                                  10.1.1.2              -       100     0       65002 i
+ * >      RD: 10.1.1.2:10030 imet 10.1.1.2
+                                 10.1.1.2              -       100     0       65002 i
  * >      RD: 10.1.1.3:10010 imet 10.1.1.3
                                  10.1.1.3              -       100     0       65003 i
  * >      RD: 10.1.1.3:10020 imet 10.1.1.3
                                  10.1.1.3              -       100     0       65003 i
+ * >      RD: 10.1.1.3:10030 imet 10.1.1.3
+                                 10.1.1.3              -       100     0       65003 i
  * >      RD: 10.1.1.4:10010 imet 10.1.1.4
                                  10.1.1.4              -       100     0       65004 i
  * >      RD: 10.1.1.4:10020 imet 10.1.1.4
+                                 10.1.1.4              -       100     0       65004 i
+ * >      RD: 10.1.1.4:10030 imet 10.1.1.4
                                  10.1.1.4              -       100     0       65004 i
 ```
 
@@ -210,12 +233,13 @@ AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Li
 - `imet` = Inclusive Multicast Ethernet Tag (Type 3)
 - Next-hop = VTEP IP (Loopback0 Leaf)
 - Spine сохраняет оригинальный next-hop благодаря `next-hop-unchanged`
+- От некоторых Leaf-ов приходят mac-ip (Type 2) маршруты
 
 ### Leaf-01
 
 #### Проверка VxLAN интерфейса
 ```bash
-leaf-01#show interfaces vxlan 1
+show interfaces vxlan 1
 Vxlan1 is up, line protocol is up (connected)
   Hardware is Vxlan
   Source interface is Loopback0 and is active with 10.1.1.1
@@ -224,13 +248,14 @@ Vxlan1 is up, line protocol is up (connected)
   Remote MAC learning via EVPN
   VNI mapping to VLANs
   Static VLAN to VNI mapping is
-    [10, 10010]       [20, 10020]
+    [10, 10010]       [20, 10020]       [30, 10030]
   Note: All Dynamic VLANs used by VCS are internal VLANs.
         Use 'show vxlan vni' for details.
   Static VRF to VNI mapping is not configured
   Headend replication flood vtep list is:
     10 10.1.1.3        10.1.1.4        10.1.1.2
     20 10.1.1.3        10.1.1.4        10.1.1.2
+    30 10.1.1.3        10.1.1.4        10.1.1.2
   Shared Router MAC is 0000.0000.0000
 ```
 
@@ -238,7 +263,7 @@ Vxlan1 is up, line protocol is up (connected)
 - VTEP IP: 10.1.1.1 (source для туннелей)
 - Flood Mode: headend (Ingress Replication) - BUM трафик реплицируется на каждый VTEP отдельно
 - MAC learning: через EVPN (control-plane)
-- VNI mapping: VLAN 10 → VNI 10010, VLAN 20 → VNI 10020
+- VNI mapping: VLAN 10 → VNI 10010, VLAN 20 → VNI 10020, VLAN 30 → VNI 10030
 
 #### Проверка VxLAN VTEPs
 ```bash
@@ -248,8 +273,8 @@ Remote VTEPS for Vxlan1:
 VTEP           Tunnel Type(s)
 -------------- --------------
 10.1.1.2       flood
-10.1.1.3       flood
-10.1.1.4       flood
+10.1.1.3       flood, unicast
+10.1.1.4       flood, unicast
 
 Total number of remote VTEPS:  3
 ```
@@ -377,21 +402,26 @@ BGP routing table entry for imet 10.1.1.4, Route Distinguisher: 10.1.1.4:10020
 leaf-01#show vxlan address-table
           Vxlan Mac Address Table
 ----------------------------------------------------------------------
-
 VLAN  Mac Address     Type      Prt  VTEP             Moves   Last Move
 ----  -----------     ----      ---  ----             -----   ---------
-  10  0050.7966.6810  EVPN      Vx1  10.1.1.2         1       0:01:51 ago
-Total Remote Mac Addresses for this criterion: 1
+  10  0050.7966.6810  EVPN      Vx1  10.1.1.2         1       0:00:13 ago
+  20  0050.7966.6811  EVPN      Vx1  10.1.1.3         1       0:00:01 ago
+  20  0050.7966.6813  EVPN      Vx1  10.1.1.4         1       0:00:01 ago
+  30  0050.7966.6812  EVPN      Vx1  10.1.1.3         1       0:03:54 ago
+  30  0050.7966.6814  EVPN      Vx1  10.1.1.4         1       0:03:25 ago
+Total Remote Mac Addresses for this criterion: 5
 
-leaf-02#show vxlan address-table
+
+leaf-03#show vxlan address-table
           Vxlan Mac Address Table
 ----------------------------------------------------------------------
-
 VLAN  Mac Address     Type      Prt  VTEP             Moves   Last Move
 ----  -----------     ----      ---  ----             -----   ---------
-  10  0050.7966.680f  EVPN      Vx1  10.1.1.1         1       0:06:49 ago
-Total Remote Mac Addresses for this criterion: 1
-
+  10  0050.7966.680f  EVPN      Vx1  10.1.1.1         1       0:00:38 ago
+  10  0050.7966.6810  EVPN      Vx1  10.1.1.2         1       0:00:38 ago
+  20  0050.7966.6813  EVPN      Vx1  10.1.1.4         1       0:00:26 ago
+  30  0050.7966.6814  EVPN      Vx1  10.1.1.4         1       0:03:50 ago
+Total Remote Mac Addresses for this criterion: 4
 ```
 
 **Объяснение:**
@@ -410,6 +440,24 @@ Vlan    Mac Address       Type        Ports      Moves   Last Move
 ----    -----------       ----        -----      -----   ---------
   10    0050.7966.680f    DYNAMIC     Et3        1       0:10:16 ago
   10    0050.7966.6810    DYNAMIC     Vx1        1       0:02:59 ago
+Total Mac Addresses for this criterion: 2
+
+          Multicast Mac Address Table
+------------------------------------------------------------------
+
+Vlan    Mac Address       Type        Ports
+----    -----------       ----        -----
+Total Mac Addresses for this criterion: 0
+
+
+leaf-03#show mac address-table vlan 30
+          Mac Address Table
+------------------------------------------------------------------
+
+Vlan    Mac Address       Type        Ports      Moves   Last Move
+----    -----------       ----        -----      -----   ---------
+  30    0050.7966.6812    DYNAMIC     Et4        1       0:05:03 ago
+  30    0050.7966.6814    DYNAMIC     Vx1        1       0:04:35 ago
 Total Mac Addresses for this criterion: 2
 
           Multicast Mac Address Table
@@ -458,7 +506,7 @@ leaf-01#show vxlan flood vtep
 
 VLANS                            Ip Address
 -----------------------------   ------------------------------------------------
-10,20                           10.1.1.2        10.1.1.3        10.1.1.4
+10,20,30                        10.1.1.2        10.1.1.3        10.1.1.4
 ```
 
 **Объяснение:**
