@@ -469,11 +469,11 @@ leaf-01(config-if)# shutdown
 
 # Проверить, что трафик продолжает идти через Leaf-02
 Linux21# ip -c link show
-3: ens4: <BROADCAST,MULTICAST,SLAVE> mtu 1500 qdisc fq_codel master bond0 state >>DOWN<< mode DEFAULT group default qlen 1000
+3: ens3: <BROADCAST,MULTICAST,SLAVE> mtu 1500 qdisc fq_codel master bond0 state >>DOWN<< mode DEFAULT group default qlen 1000
     link/ether 00:50:00:00:15:01 brd ff:ff:ff:ff:ff:ff
     altname enp0s4
     altname enx005000001501
-4: ens5: <BROADCAST,MULTICAST,SLAVE,UP,LOWER_UP> mtu 1500 qdisc fq_codel master bond0 state UP mode DEFAULT group default qlen 1000
+4: ens4: <BROADCAST,MULTICAST,SLAVE,UP,LOWER_UP> mtu 1500 qdisc fq_codel master bond0 state UP mode DEFAULT group default qlen 1000
     link/ether 00:50:00:00:15:01 brd ff:ff:ff:ff:ff:ff permaddr 00:50:00:00:15:02
     altname enp0s5
     altname enx005000001502
