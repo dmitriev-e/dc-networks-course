@@ -8,3 +8,4 @@
 - [18/01/2026 - VxLAN. L2 VNI](lab05/)
 - [05/02/2026 - VxLAN. L3 VNI](lab06/)
 - [19/02/2026 - VXLAN EVPN Multihoming (ESI-LAG)](lab07/)
+- [03/03/2026 - VxLAN. Routing.](lab08/)
