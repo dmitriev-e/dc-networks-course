@@ -1,0 +1,71 @@
+# /etc/netplan/01-dcx-pod1-evpn-rt-2.yaml
+# bond0 (LACP via ens3+ens4) + ens5/ens6 BGP links + EVPN L3VNI overlay
+# VTEP source: 10.11.0.5 (bond0)
+
+network:
+  version: 2
+  renderer: networkd
+
+  ethernets:
+    ens3:
+      dhcp4: false
+      dhcp6: false
+    ens4:
+      dhcp4: false
+      dhcp6: false
+
+  bonds:
+    bond0:
+      interfaces: [ens3, ens4]
+      addresses:
+        - 10.11.0.5/31
+      routes:
+        - to: default
+          via: 10.11.0.4
+      parameters:
+        mode: 802.3ad
+        lacp-rate: fast
+        mii-monitor-interval: 100
+        transmit-hash-policy: layer3+4
+      dhcp4: false
+      dhcp6: false
+      mtu: 1450
+
+  #tunnels:
+  #  vxlan10000:
+  #    mode: vxlan
+  #    id: 10000
+  #    local: 10.11.0.5
+  #    port: 4789
+  #    mac-learning: false
+  #  vxlan20000:
+  #    mode: vxlan
+  #    id: 20000
+  #    local: 10.11.0.5
+  #    port: 4789
+  #    mac-learning: false
+  #  vxlan30000:
+  #    mode: vxlan
+  #    id: 30000
+  #    local: 10.11.0.5
+  #    port: 4789
+  #    mac-learning: false
+
+  #bridges:
+  #  br-l3vni-zone1:
+  #    interfaces: [vxlan10000]
+  #  br-l3vni-zone2:
+  #    interfaces: [vxlan20000]
+  #  br-l3vni-zone3:
+  #    interfaces: [vxlan30000]
+
+  #vrfs:
+  #  vrf_Zone1:
+  #    table: 1001
+  #    interfaces: [br-l3vni-zone1]
+  #  vrf_Zone2:
+  #    table: 1002
+  #    interfaces: [br-l3vni-zone2]
+  #  vrf_Zone3:
+  #    table: 1003
+  #    interfaces: [br-l3vni-zone3]

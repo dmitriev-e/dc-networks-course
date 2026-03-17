@@ -1,0 +1,32 @@
+# /etc/network/interfaces — dcY-pod3-pve-1
+# PoD3, rack1 Proxmox host
+#
+# e0 — Management (pnet0), configured by Proxmox installer
+# e1 — to pod3-leaf-r1-1 Eth3 (ESI-LAG member)
+# e2 — to pod3-leaf-r1-2 Eth3 (ESI-LAG member)
+# bond0 (e1+e2) IP: 10.13.0.3/31, leaf anycast = 10.13.0.2
+# lo VTEP: 10.13.20.11/32
+#
+# BGP with EVPN-RT-1 at 10.13.0.1, EVPN-RT-2 at 10.13.0.5
+
+auto lo
+iface lo inet loopback
+    post-up ip addr add 10.13.20.11/32 dev lo label lo:vtep
+
+auto e1
+iface e1 inet manual
+    bond-master bond0
+
+auto e2
+iface e2 inet manual
+    bond-master bond0
+
+auto bond0
+iface bond0 inet static
+    address 10.13.0.3/31
+    bond-slaves e1 e2
+    bond-mode 802.3ad
+    bond-xmit-hash-policy layer3+4
+    bond-lacp-rate fast
+    bond-miimon 100
+    up ip route add default via 10.13.0.2 dev bond0
