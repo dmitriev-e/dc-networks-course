@@ -147,7 +147,6 @@ ICMP 192.168.10.10 -> 192.168.13.10
 project/
 ├── README.md                    — актуальное описание проекта
 ├── ADDRESSING_PLAN.md           — полный адресный план
-├── PRESENTATION_PLAN.md         — план защиты на 10–12 слайдов
 ├── scheme.png                   — общая топология
 ├── OverOverlay EVPN VXLAN fabric.svg
 ├── concept.md                   — исходная концепция
@@ -164,6 +163,4 @@ project/
 ## Связанные документы
 
 - [Полный адресный план](ADDRESSING_PLAN.md)
-- [План презентации для защиты](PRESENTATION_PLAN.md)
-- `configs/proxmox/proxmox-sdn.cfg` — поясняющие заметки по Proxmox SDN
 - `explain/config_*.md` — короткие технологические заметки по EVPN/SDN
